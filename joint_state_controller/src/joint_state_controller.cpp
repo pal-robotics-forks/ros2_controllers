@@ -14,12 +14,25 @@
 
 #include "joint_state_controller/joint_state_controller.hpp"
 
-#include <string>
+
+#include <stddef.h>
 #include <memory>
 
-#include "rclcpp_lifecycle/state.hpp"
-
+#include "hardware_interface/joint_state_handle.hpp"
+#include "hardware_interface/robot_hardware.hpp"
+#include "hardware_interface/types/hardware_interface_return_values.hpp"
+#include "rclcpp/clock.hpp"
+#include "rclcpp/qos.hpp"
+#include "rclcpp/qos_event.hpp"
+#include "rclcpp/time.hpp"
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "rcutils/logging_macros.h"
+#include "std_msgs/msg/header.hpp"
+
+namespace rclcpp_lifecycle
+{
+class State;
+}  // namespace rclcpp_lifecycle
 
 namespace joint_state_controller
 {
