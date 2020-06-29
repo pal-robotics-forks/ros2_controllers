@@ -474,14 +474,6 @@ void test_state_publish_rate_target(
 {
   // fill in some data so we wont fail
   auto traj_lifecycle_node = traj_controller->get_lifecycle_node();
-  const std::vector<std::string> joint_names_ = {"joint1", "joint2", "joint3"};
-  const rclcpp::Parameter joint_parameters("joints", joint_names_);
-  traj_lifecycle_node->set_parameter(joint_parameters);
-
-  const std::vector<std::string> operation_mode_names = {"write1", "write2"};
-  const rclcpp::Parameter operation_mode_parameters("write_op_modes", operation_mode_names);
-  traj_lifecycle_node->set_parameter(operation_mode_parameters);
-
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(traj_lifecycle_node->get_node_base_interface());
 
@@ -539,16 +531,9 @@ TEST_F(TestTrajectoryController, zero_state_publish_rate) {
 }
 
 TEST_F(TestTrajectoryController, test_jumbled_joint_order) {
-  SetUpTrajectoryController(false);
+  SetUpTrajectoryController();
 
   auto traj_lifecycle_node = traj_controller_->get_lifecycle_node();
-  const std::vector<std::string> joint_names = {"joint1", "joint2", "joint3"};
-  const rclcpp::Parameter joint_parameters("joints", joint_names);
-  traj_lifecycle_node->set_parameter(joint_parameters);
-
-  const std::vector<std::string> operation_mode_names = {"write1", "write2"};
-  const rclcpp::Parameter operation_mode_parameters("write_op_modes", operation_mode_names);
-  traj_lifecycle_node->set_parameter(operation_mode_parameters);
 
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(traj_lifecycle_node->get_node_base_interface());
@@ -599,20 +584,9 @@ TEST_F(TestTrajectoryController, test_jumbled_joint_order) {
 }
 
 TEST_F(TestTrajectoryController, test_partial_joint_list) {
-  auto traj_controller = std::make_shared<joint_trajectory_controller::JointTrajectoryController>();
-  auto ret = traj_controller->init(test_robot_, controller_name_);
-  if (ret != controller_interface::CONTROLLER_INTERFACE_RET_SUCCESS) {
-    FAIL();
-  }
+  SetUpTrajectoryController();
 
-  auto traj_lifecycle_node = traj_controller->get_lifecycle_node();
-  std::vector<std::string> joint_names = {"joint1", "joint2", "joint3"};
-  rclcpp::Parameter joint_parameters("joints", joint_names);
-  traj_lifecycle_node->set_parameter(joint_parameters);
-
-  std::vector<std::string> operation_mode_names = {"write1", "write2"};
-  rclcpp::Parameter operation_mode_parameters("write_op_modes", operation_mode_names);
-  traj_lifecycle_node->set_parameter(operation_mode_parameters);
+  auto traj_lifecycle_node = traj_controller_->get_lifecycle_node();
 
   rclcpp::Parameter partial_joints_parameters("allow_partial_joints_goal", true);
   traj_lifecycle_node->set_parameter(partial_joints_parameters);
@@ -620,8 +594,8 @@ TEST_F(TestTrajectoryController, test_partial_joint_list) {
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(traj_lifecycle_node->get_node_base_interface());
 
-  traj_controller->on_configure(traj_lifecycle_node->get_current_state());
-  traj_controller->on_activate(traj_lifecycle_node->get_current_state());
+  traj_controller_->on_configure(traj_lifecycle_node->get_current_state());
+  traj_controller_->on_activate(traj_lifecycle_node->get_current_state());
 
   auto future_handle = std::async(
     std::launch::async, [&executor]() -> void {
@@ -658,7 +632,7 @@ TEST_F(TestTrajectoryController, test_partial_joint_list) {
   auto end_time = start_time + wait;
   while (rclcpp::Clock().now() < end_time) {
     test_robot_->read();
-    traj_controller->update();
+    traj_controller_->update();
     test_robot_->write();
   }
 
@@ -677,4 +651,9 @@ TEST_F(TestTrajectoryController, test_partial_joint_list) {
 //    threshold) << "Joint 3 velocity should be 0.0 since it's not in the goal";
 
   executor.cancel();
+}
+
+TEST_F(TestTrajectoryController, invalid_message) {
+  SetUpTrajectoryController();
+
 }
