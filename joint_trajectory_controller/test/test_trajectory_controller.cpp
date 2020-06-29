@@ -90,7 +90,6 @@ public:
     }
     return false;
   }
-
 };
 
 class TestTrajectoryController : public ::testing::Test
@@ -125,6 +124,14 @@ protected:
     if (ret != controller_interface::CONTROLLER_INTERFACE_RET_SUCCESS) {
       FAIL();
     }
+  }
+  void SetUpAndActivateTrajectoryController(bool use_local_parameters = true)
+  {
+    SetUpTrajectoryController(use_local_parameters);
+
+    auto traj_lifecycle_node = traj_controller_->get_lifecycle_node();
+    traj_controller_->on_configure(traj_lifecycle_node->get_current_state());
+    traj_controller_->on_activate(traj_lifecycle_node->get_current_state());
   }
 
   static void TearDownTestCase()
@@ -683,6 +690,61 @@ TEST_F(TestTrajectoryController, test_partial_joint_list) {
 }
 
 TEST_F(TestTrajectoryController, invalid_message) {
-  SetUpTrajectoryController();
+  SetUpAndActivateTrajectoryController();
+  trajectory_msgs::msg::JointTrajectory traj_msg, good_traj_msg;
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(traj_controller_->get_lifecycle_node()->get_node_base_interface());
 
+
+  good_traj_msg.joint_names = {"joint1"};
+  good_traj_msg.header.stamp = rclcpp::Time(0);
+  good_traj_msg.points.resize(1);
+  good_traj_msg.points[0].time_from_start = rclcpp::Duration::from_seconds(0.25);
+  good_traj_msg.points[0].positions.resize(1);
+  good_traj_msg.points[0].positions[0] = 2.0;
+  good_traj_msg.points[0].velocities.resize(1);
+  good_traj_msg.points[0].velocities[0] = 2.0;
+  EXPECT_TRUE(traj_controller_->validate_trajectory_msg(good_traj_msg));
+
+  // Incompatible joint names
+  traj_msg = good_traj_msg;
+  traj_msg.joint_names = {"bad_name"};
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // No position data
+  traj_msg = good_traj_msg;
+  traj_msg.points[0].positions.clear();
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // Incompatible data sizes, too many positions
+  traj_msg = good_traj_msg;
+  traj_msg.points[0].positions = {1.0, 2.0};
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // Incompatible data sizes, too few positions
+  traj_msg = good_traj_msg;
+  traj_msg.joint_names = {"joint1", "joint2"};
+  traj_msg.points[0].positions = {1.0};
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // Incompatible data sizes, too many velocities
+  traj_msg = good_traj_msg;
+  traj_msg.points[0].velocities = {1.0, 2.0};
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // Incompatible data sizes, too many accelerations
+  traj_msg = good_traj_msg;
+  traj_msg.points[0].accelerations = {1.0, 2.0};
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // Incompatible data sizes, too many effort
+  traj_msg = good_traj_msg;
+  traj_msg.points[0].positions.clear();
+  traj_msg.points[0].effort = {1.0, 2.0};
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
+
+  // Non-strictly increasing waypoint times
+  traj_msg = good_traj_msg;
+  traj_msg.points.push_back(traj_msg.points.front());
+  EXPECT_FALSE(traj_controller_->validate_trajectory_msg(traj_msg));
 }

@@ -725,6 +725,57 @@ bool JointTrajectoryController::validate_trajectory_msg(
       return false;
     }
   }
+
+  rclcpp::Duration previous_traj_time(0);
+  for (auto i = 0ul; i < trajectory.points.size(); ++i) {
+    if ((i > 0) && (rclcpp::Duration(trajectory.points[i].time_from_start) <= previous_traj_time)) {
+      RCLCPP_ERROR(
+        lifecycle_node_->get_logger(),
+        "Time between points %u and %u is not strictly increasing, it is %f and %f respectively",
+        i - 1, i, previous_traj_time.seconds(),
+        rclcpp::Duration(trajectory.points[i].time_from_start).seconds());
+      return false;
+    }
+    previous_traj_time = trajectory.points[i].time_from_start;
+
+    if (trajectory.joint_names.size() != trajectory.points[i].positions.size()) {
+      RCLCPP_ERROR(
+        lifecycle_node_->get_logger(),
+        "Mismatch between joint_names (%u) and positions (%u) at point #%u.",
+        trajectory.joint_names.size(), trajectory.points[i].positions.size(), i);
+      return false;
+    }
+
+    if (!trajectory.points[i].velocities.empty() &&
+      trajectory.joint_names.size() != trajectory.points[i].velocities.size())
+    {
+      RCLCPP_ERROR(
+        lifecycle_node_->get_logger(),
+        "Mismatch between joint_names (%u) and velocities (%u) at point #%u.",
+        trajectory.joint_names.size(), trajectory.points[i].velocities.size(), i);
+      return false;
+    }
+
+    if (!trajectory.points[i].accelerations.empty() &&
+      trajectory.joint_names.size() != trajectory.points[i].accelerations.size())
+    {
+      RCLCPP_ERROR(
+        lifecycle_node_->get_logger(),
+        "Mismatch between joint_names (%u) and accelerations (%u) at point #%u.",
+        trajectory.joint_names.size(), trajectory.points[i].accelerations.size(), i);
+      return false;
+    }
+
+    if (!trajectory.points[i].effort.empty() &&
+      trajectory.joint_names.size() != trajectory.points[i].effort.size())
+    {
+      RCLCPP_ERROR(
+        lifecycle_node_->get_logger(),
+        "Mismatch between joint_names (%u) and effort (%u) at point #%u.",
+        trajectory.joint_names.size(), trajectory.points[i].effort.size(), i);
+      return false;
+    }
+  }
   return true;
 }
 
