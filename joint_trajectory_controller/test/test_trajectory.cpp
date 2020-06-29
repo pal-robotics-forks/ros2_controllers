@@ -72,22 +72,22 @@ TEST(TestTrajectory, sample_trajectory) {
 
   trajectory_msgs::msg::JointTrajectoryPoint p1;
   p1.positions.push_back(1.0);
-  p1.velocities.push_back(0.0);
-  p1.accelerations.push_back(0.0);
+  p1.velocities.push_back(-1.0);
+  p1.accelerations.push_back(3.0);
   p1.time_from_start.sec = 1;
   p1.time_from_start.nanosec = 0;
 
   trajectory_msgs::msg::JointTrajectoryPoint p2;
   p2.positions.push_back(2.0);
-  p2.velocities.push_back(0.0);
-  p2.accelerations.push_back(0.0);
+  p2.velocities.push_back(-2.0);
+  p2.accelerations.push_back(6.0);
   p2.time_from_start.sec = 2;
   p2.time_from_start.nanosec = 0;
 
   trajectory_msgs::msg::JointTrajectoryPoint p3;
   p3.positions.push_back(3.0);
-  p3.velocities.push_back(0.0);
-  p3.accelerations.push_back(0.0);
+  p3.velocities.push_back(-3.0);
+  p3.accelerations.push_back(9.0);
   p3.time_from_start.sec = 3;
   p3.time_from_start.nanosec = 0;
 
@@ -115,37 +115,53 @@ TEST(TestTrajectory, sample_trajectory) {
   ASSERT_EQ(traj.begin(), start);
   ASSERT_EQ(traj.begin(), end);
   EXPECT_EQ(0.0, expected_state.positions[0]);
+  EXPECT_EQ(0.0, expected_state.velocities[0]);
+  EXPECT_EQ(0.0, expected_state.accelerations[0]);
 
   // sample before trajectory starts
   traj.sample(time_now - rclcpp::Duration::from_seconds(0.5), expected_state, start, end);
   ASSERT_EQ(traj.begin(), start);
   ASSERT_EQ(traj.begin(), end);
   EXPECT_EQ(0.0, expected_state.positions[0]);
+  EXPECT_EQ(0.0, expected_state.velocities[0]);
+  EXPECT_EQ(0.0, expected_state.accelerations[0]);
 
   traj.sample(time_now + rclcpp::Duration::from_seconds(0.5), expected_state, start, end);
   ASSERT_EQ(traj.begin(), start);
   ASSERT_EQ(traj.begin(), end);
   EXPECT_EQ(0.5, expected_state.positions[0]);
+  EXPECT_EQ(-0.5, expected_state.velocities[0]);
+  EXPECT_EQ(1.5, expected_state.accelerations[0]);
 
   traj.sample(time_now + rclcpp::Duration::from_seconds(1.0), expected_state, start, end);
   ASSERT_EQ(traj.begin(), start);
   ASSERT_EQ((++traj.begin()), end);
   EXPECT_EQ(1.0, expected_state.positions[0]);
+  EXPECT_EQ(-1.0, expected_state.velocities[0]);
+  EXPECT_EQ(3.0, expected_state.accelerations[0]);
 
   traj.sample(time_now + rclcpp::Duration::from_seconds(1.5), expected_state, start, end);
   ASSERT_EQ(traj.begin(), start);
   ASSERT_EQ((++traj.begin()), end);
   EXPECT_EQ(1.5, expected_state.positions[0]);
+  EXPECT_EQ(-1.5, expected_state.velocities[0]);
+  EXPECT_EQ(4.5, expected_state.accelerations[0]);
 
   traj.sample(time_now + rclcpp::Duration::from_seconds(2.5), expected_state, start, end);
   EXPECT_EQ(2.5, expected_state.positions[0]);
+  EXPECT_EQ(-2.5, expected_state.velocities[0]);
+  EXPECT_EQ(7.5, expected_state.accelerations[0]);
 
   traj.sample(time_now + rclcpp::Duration::from_seconds(3.0), expected_state, start, end);
   EXPECT_EQ(3.0, expected_state.positions[0]);
+  EXPECT_EQ(-3.0, expected_state.velocities[0]);
+  EXPECT_EQ(9.0, expected_state.accelerations[0]);
 
   // sample past given points
   traj.sample(time_now + rclcpp::Duration::from_seconds(3.125), expected_state, start, end);
   ASSERT_EQ((--traj.end()), start);
   ASSERT_EQ(traj.end(), end);
   EXPECT_EQ(3.0, expected_state.positions[0]);
+  EXPECT_EQ(-3.0, expected_state.velocities[0]);
+  EXPECT_EQ(9.0, expected_state.accelerations[0]);
 }
