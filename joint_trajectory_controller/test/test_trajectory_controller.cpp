@@ -83,7 +83,6 @@ public:
   {
     rclcpp::WaitSet wait_set;
     wait_set.add_subscription(joint_command_subscriber_);
-
     if (wait_set.wait(timeout).kind() == rclcpp::WaitResultKind::Ready) {
       executor.spin_some();
       return true;
@@ -382,19 +381,13 @@ TEST_F(TestTrajectoryController, cleanup) {
   state = traj_lifecycle_node->activate();
   ASSERT_EQ(State::PRIMARY_STATE_ACTIVE, state.id());
 
-  // wait for the subscriber and publisher to completely setup
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-
   // send msg
   builtin_interfaces::msg::Duration time_from_start;
   time_from_start.sec = 1;
   time_from_start.nanosec = 0;
   std::vector<std::array<double, 3>> points {{{3.3, 4.4, 5.5}}};
   publish(time_from_start, points);
-  // wait for msg is be published to the system
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  executor.spin_once();
-
+  traj_controller_->wait_for_trajectory(executor);
   traj_controller_->update();
   test_robot_->write();
 
@@ -412,8 +405,6 @@ TEST_F(TestTrajectoryController, cleanup) {
   EXPECT_NEAR(1.1, test_robot_->pos1, COMMON_THRESHOLD);
   EXPECT_NEAR(2.2, test_robot_->pos2, COMMON_THRESHOLD);
   EXPECT_NEAR(3.3, test_robot_->pos3, COMMON_THRESHOLD);
-
-  executor.cancel();
 }
 
 TEST_F(TestTrajectoryController, correct_initialization_using_parameters) {
@@ -432,11 +423,6 @@ TEST_F(TestTrajectoryController, correct_initialization_using_parameters) {
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(traj_lifecycle_node->get_node_base_interface());
 
-  auto future_handle = std::async(
-    std::launch::async, [&executor]() -> void {
-      executor.spin();
-    });
-
   auto state = traj_lifecycle_node->configure();
   ASSERT_EQ(State::PRIMARY_STATE_INACTIVE, state.id());
   EXPECT_EQ(1.1, test_robot_->pos1);
@@ -446,13 +432,9 @@ TEST_F(TestTrajectoryController, correct_initialization_using_parameters) {
   state = traj_lifecycle_node->activate();
   ASSERT_EQ(State::PRIMARY_STATE_ACTIVE, state.id());
 
-  // wait for the subscriber and publisher to completely setup
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-
   // send msg
-  builtin_interfaces::msg::Duration time_from_start;
-  time_from_start.sec = 1;
-  time_from_start.nanosec = 0;
+  constexpr auto FIRST_POINT_TIME = std::chrono::milliseconds(250);
+  builtin_interfaces::msg::Duration time_from_start{rclcpp::Duration(FIRST_POINT_TIME)};
   // *INDENT-OFF*
   std::vector<std::array<double, 3>> points {
     {{3.3, 4.4, 5.5}},
@@ -461,15 +443,14 @@ TEST_F(TestTrajectoryController, correct_initialization_using_parameters) {
   };
   // *INDENT-ON*
   publish(time_from_start, points);
-  // wait for msg is be published to the system
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  traj_controller_->wait_for_trajectory(executor);
 
   // first update
   traj_controller_->update();
   test_robot_->write();
 
   // wait so controller process the second point when deactivated
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  std::this_thread::sleep_for(FIRST_POINT_TIME);
   traj_controller_->update();
   test_robot_->write();
 
@@ -540,9 +521,6 @@ void test_state_publish_rate_target(
     }
     );
 
-  // wait for things to setup
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
   // update for 1second
   const auto start_time = rclcpp::Clock().now();
   const rclcpp::Duration wait = rclcpp::Duration::from_seconds(1.0);
@@ -551,7 +529,8 @@ void test_state_publish_rate_target(
     traj_controller->update();
   }
 
-  EXPECT_EQ(target_msg_count, echo_received_counter);
+  // We may miss the last message since time allowed is exactly the time needed
+  EXPECT_NEAR(target_msg_count, echo_received_counter, 1);
 
   executor.cancel();
 }
@@ -577,13 +556,6 @@ TEST_F(TestTrajectoryController, test_jumbled_joint_order) {
   traj_controller_->on_configure(traj_lifecycle_node->get_current_state());
   traj_controller_->on_activate(traj_lifecycle_node->get_current_state());
 
-  auto future_handle = std::async(
-    std::launch::async, [&executor]() -> void {
-      executor.spin();
-    });
-  // wait for things to setup
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
   {
     trajectory_msgs::msg::JointTrajectory traj_msg;
     const std::vector<std::string> jumbled_joint_names {
@@ -602,9 +574,10 @@ TEST_F(TestTrajectoryController, test_jumbled_joint_order) {
     trajectory_publisher_->publish(traj_msg);
   }
 
+  traj_controller_->wait_for_trajectory(executor);
   // update for 0.5 seconds
   const auto start_time = rclcpp::Clock().now();
-  const rclcpp::Duration wait = rclcpp::Duration::from_seconds(0.5);
+  const rclcpp::Duration wait = rclcpp::Duration::from_seconds(0.25);
   const auto end_time = start_time + wait;
   while (rclcpp::Clock().now() < end_time) {
     test_robot_->read();
@@ -615,8 +588,6 @@ TEST_F(TestTrajectoryController, test_jumbled_joint_order) {
   EXPECT_NEAR(1.0, test_robot_->pos1, COMMON_THRESHOLD);
   EXPECT_NEAR(2.0, test_robot_->pos2, COMMON_THRESHOLD);
   EXPECT_NEAR(3.0, test_robot_->pos3, COMMON_THRESHOLD);
-
-  executor.cancel();
 }
 
 TEST_F(TestTrajectoryController, test_partial_joint_list) {
@@ -632,13 +603,6 @@ TEST_F(TestTrajectoryController, test_partial_joint_list) {
 
   traj_controller_->on_configure(traj_lifecycle_node->get_current_state());
   traj_controller_->on_activate(traj_lifecycle_node->get_current_state());
-
-  auto future_handle = std::async(
-    std::launch::async, [&executor]() -> void {
-      executor.spin();
-    });
-  // wait for things to setup
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   const double initial_joint3_cmd = test_robot_->cmd3;
   trajectory_msgs::msg::JointTrajectory traj_msg;
@@ -662,6 +626,7 @@ TEST_F(TestTrajectoryController, test_partial_joint_list) {
     trajectory_publisher_->publish(traj_msg);
   }
 
+  traj_controller_->wait_for_trajectory(executor);
   // update for 0.5 seconds
   auto start_time = rclcpp::Clock().now();
   rclcpp::Duration wait = rclcpp::Duration::from_seconds(0.5);
