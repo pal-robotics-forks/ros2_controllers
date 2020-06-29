@@ -398,8 +398,15 @@ TEST_F(TestTrajectoryController, cleanup) {
 
   state = traj_lifecycle_node->cleanup();
   ASSERT_EQ(State::PRIMARY_STATE_UNCONFIGURED, state.id());
-  traj_controller_->update();
-  test_robot_->write();
+  // update for 0.25 seconds
+  const auto start_time = rclcpp::Clock().now();
+  const rclcpp::Duration wait = rclcpp::Duration::from_seconds(0.25);
+  const auto end_time = start_time + wait;
+  while (rclcpp::Clock().now() < end_time) {
+    test_robot_->read();
+    traj_controller_->update();
+    test_robot_->write();
+  }
 
   // should be home pose again
   EXPECT_NEAR(1.1, test_robot_->pos1, COMMON_THRESHOLD);
@@ -575,7 +582,7 @@ TEST_F(TestTrajectoryController, test_jumbled_joint_order) {
   }
 
   traj_controller_->wait_for_trajectory(executor);
-  // update for 0.5 seconds
+  // update for 0.25 seconds
   const auto start_time = rclcpp::Clock().now();
   const rclcpp::Duration wait = rclcpp::Duration::from_seconds(0.25);
   const auto end_time = start_time + wait;
