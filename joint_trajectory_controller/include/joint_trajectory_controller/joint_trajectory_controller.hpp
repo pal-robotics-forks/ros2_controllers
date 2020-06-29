@@ -107,7 +107,7 @@ public:
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
   on_shutdown(const rclcpp_lifecycle::State & previous_state) override;
 
-private:
+protected:
   std::vector<std::string> joint_names_;
   std::vector<std::string> write_op_names_;
 

@@ -64,6 +64,35 @@ spin(rclcpp::executors::MultiThreadedExecutor * exe)
   exe->spin();
 }
 
+class TestableJointTrajectoryController : public joint_trajectory_controller::
+  JointTrajectoryController
+{
+public:
+  using joint_trajectory_controller::JointTrajectoryController::validate_trajectory_msg;
+  using joint_trajectory_controller::JointTrajectoryController::JointTrajectoryController;
+  /**
+  * @brief wait_for_trajectory block until a new JointTrajectory is received.
+  * Requires that the executor is not spinned elsewhere between the
+  *  message publication and the call to this function
+  *
+  * @return true if new JointTrajectory msg was received, false if timeout
+  */
+  bool wait_for_trajectory(
+    rclcpp::Executor & executor,
+    const std::chrono::milliseconds & timeout = std::chrono::milliseconds{500})
+  {
+    rclcpp::WaitSet wait_set;
+    wait_set.add_subscription(joint_command_subscriber_);
+
+    if (wait_set.wait(timeout).kind() == rclcpp::WaitResultKind::Ready) {
+      executor.spin_some();
+      return true;
+    }
+    return false;
+  }
+
+};
+
 class TestTrajectoryController : public ::testing::Test
 {
 protected:
@@ -87,10 +116,10 @@ protected:
   void SetUpTrajectoryController(bool use_local_parameters = true)
   {
     if (use_local_parameters) {
-      traj_controller_ = std::make_shared<joint_trajectory_controller::JointTrajectoryController>(
+      traj_controller_ = std::make_shared<TestableJointTrajectoryController>(
         joint_names_, op_mode_);
     } else {
-      traj_controller_ = std::make_shared<joint_trajectory_controller::JointTrajectoryController>();
+      traj_controller_ = std::make_shared<TestableJointTrajectoryController>();
     }
     auto ret = traj_controller_->init(test_robot_, controller_name_);
     if (ret != controller_interface::CONTROLLER_INTERFACE_RET_SUCCESS) {
@@ -158,12 +187,12 @@ protected:
   rclcpp::Node::SharedPtr pub_node_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr trajectory_publisher_;
 
-  std::shared_ptr<joint_trajectory_controller::JointTrajectoryController> traj_controller_;
+  std::shared_ptr<TestableJointTrajectoryController> traj_controller_;
 };
 
 TEST_F(TestTrajectoryController, wrong_initialization) {
   const auto uninitialized_robot = std::make_shared<test_robot_hardware::TestRobotHardware>();
-  auto traj_controller = std::make_shared<joint_trajectory_controller::JointTrajectoryController>(
+  auto traj_controller = std::make_shared<TestableJointTrajectoryController>(
     joint_names_, op_mode_);
   const auto ret = traj_controller->init(uninitialized_robot, controller_name_);
   if (ret != controller_interface::CONTROLLER_INTERFACE_RET_SUCCESS) {
@@ -177,7 +206,7 @@ TEST_F(TestTrajectoryController, wrong_initialization) {
 TEST_F(TestTrajectoryController, correct_initialization) {
   const auto initialized_robot = std::make_shared<test_robot_hardware::TestRobotHardware>();
   initialized_robot->init();
-  auto traj_controller = std::make_shared<joint_trajectory_controller::JointTrajectoryController>(
+  auto traj_controller = std::make_shared<TestableJointTrajectoryController>(
     joint_names_, op_mode_);
   const auto ret = traj_controller->init(initialized_robot, controller_name_);
   if (ret != controller_interface::CONTROLLER_INTERFACE_RET_SUCCESS) {
@@ -469,7 +498,7 @@ TEST_F(TestTrajectoryController, correct_initialization_using_parameters) {
 }
 
 void test_state_publish_rate_target(
-  std::shared_ptr<joint_trajectory_controller::JointTrajectoryController> traj_controller,
+  std::shared_ptr<TestableJointTrajectoryController> traj_controller,
   int target_msg_count)
 {
   // fill in some data so we wont fail
