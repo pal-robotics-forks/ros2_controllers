@@ -178,7 +178,8 @@ protected:
    */
   void publish(
     const builtin_interfaces::msg::Duration & delay_btwn_points,
-    const std::vector<std::vector<double>> & points)
+    const std::vector<std::vector<double>> & points,
+    rclcpp::Time start_time = rclcpp::Time())
   {
     int wait_count = 0;
     const auto topic = trajectory_publisher_->get_topic_name();
@@ -194,8 +195,7 @@ protected:
 
     trajectory_msgs::msg::JointTrajectory traj_msg;
     traj_msg.joint_names = {joint_names_.begin(), joint_names_.begin() + points[0].size()};
-    traj_msg.header.stamp.sec = 0;
-    traj_msg.header.stamp.nanosec = 0;
+    traj_msg.header.stamp = start_time;
     traj_msg.points.resize(points.size());
 
     builtin_interfaces::msg::Duration duration_msg;
@@ -825,5 +825,68 @@ TEST_F(TestTrajectoryController, test_trajectory_replace) {
   expected_desired.positions[1] = points_old[0][1];
   expected_desired.positions[2] = points_old[0][2];
   expected_actual = expected_desired;
+  waitAndCompareState(expected_actual, expected_desired, executor, rclcpp::Duration(delay), 0.1);
+}
+
+/**
+ * @brief test_ignore_old_trajectory Sending an old trajectory replacing an existing trajectory
+ */
+TEST_F(TestTrajectoryController, test_ignore_old_trajectory) {
+  SetUpTrajectoryController();
+  auto traj_lifecycle_node = traj_controller_->get_lifecycle_node();
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(traj_lifecycle_node->get_node_base_interface());
+  subscribeToState();
+  traj_lifecycle_node->configure();
+  traj_lifecycle_node->activate();
+
+  std::vector<std::vector<double>> points_old {{{2., 3., 4.}, {4., 6., 8.}}};
+  std::vector<std::vector<double>> points_new {{{-1., -2., -3.}}};
+
+  const auto delay = std::chrono::milliseconds(500);
+  builtin_interfaces::msg::Duration time_from_start{rclcpp::Duration(delay)};
+  publish(time_from_start, points_old);
+  trajectory_msgs::msg::JointTrajectoryPoint expected_actual, expected_desired;
+  expected_actual.positions = {points_old[0].begin(), points_old[0].end()};
+  expected_desired = expected_actual;
+  //  Check that we reached end of points_old[0] trajectory
+  waitAndCompareState(expected_actual, expected_desired, executor, rclcpp::Duration(delay), 0.1);
+
+  RCLCPP_INFO(traj_lifecycle_node->get_logger(), "Sending new trajectory in the past");
+  //  New trajectory will end before current time
+  rclcpp::Time new_traj_start = rclcpp::Clock().now() - delay - std::chrono::milliseconds(50);
+  expected_actual.positions = {points_old[1].begin(), points_old[1].end()};
+  expected_desired = expected_actual;
+  publish(time_from_start, points_new, new_traj_start);
+  waitAndCompareState(expected_actual, expected_desired, executor, rclcpp::Duration(delay), 0.1);
+}
+
+TEST_F(TestTrajectoryController, test_ignore_partial_old_trajectory) {
+  SetUpTrajectoryController();
+  auto traj_lifecycle_node = traj_controller_->get_lifecycle_node();
+  rclcpp::executors::SingleThreadedExecutor executor;
+  executor.add_node(traj_lifecycle_node->get_node_base_interface());
+  subscribeToState();
+  traj_lifecycle_node->configure();
+  traj_lifecycle_node->activate();
+
+  std::vector<std::vector<double>> points_old {{{2., 3., 4.}, {4., 6., 8.}}};
+  std::vector<std::vector<double>> points_new {{{-1., -2., -3.}, {-2., -4., -6.}}};
+
+  const auto delay = std::chrono::milliseconds(500);
+  builtin_interfaces::msg::Duration time_from_start{rclcpp::Duration(delay)};
+  publish(time_from_start, points_old);
+  trajectory_msgs::msg::JointTrajectoryPoint expected_actual, expected_desired;
+  expected_actual.positions = {points_old[0].begin(), points_old[0].end()};
+  expected_desired = expected_actual;
+  //  Check that we reached end of points_old[0]trajectory
+  waitAndCompareState(expected_actual, expected_desired, executor, rclcpp::Duration(delay), 0.1);
+
+  RCLCPP_INFO(traj_lifecycle_node->get_logger(), "Sending new trajectory partially in the past");
+  //  New trajectory first point is in the past, second is in the future
+  rclcpp::Time new_traj_start = rclcpp::Clock().now() - delay - std::chrono::milliseconds(50);
+  expected_actual.positions = {points_new[1].begin(), points_new[1].end()};
+  expected_desired = expected_actual;
+  publish(time_from_start, points_new, new_traj_start);
   waitAndCompareState(expected_actual, expected_desired, executor, rclcpp::Duration(delay), 0.1);
 }
