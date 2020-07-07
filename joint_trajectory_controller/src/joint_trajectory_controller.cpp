@@ -526,7 +526,6 @@ void JointTrajectoryController::publish_state(
 
   if (state_publisher_ && state_publisher_->trylock()) {
     last_state_publish_time_ = lifecycle_node_->now();
-
     state_publisher_->msg_.header.stamp = last_state_publish_time_;
     state_publisher_->msg_.desired.positions = desired_state.positions;
     state_publisher_->msg_.desired.velocities = desired_state.velocities;
@@ -711,6 +710,21 @@ bool JointTrajectoryController::validate_trajectory_msg(
       lifecycle_node_->get_logger(),
       "Empty joint names on incoming trajectory.");
     return false;
+  }
+
+  const auto trajectory_start_time = static_cast<rclcpp::Time>(trajectory.header.stamp);
+  if (trajectory_start_time.seconds() != 0.0) {
+    auto trajectory_end_time = trajectory_start_time;
+    for (const auto & p : trajectory.points) {
+      trajectory_end_time += p.time_from_start;
+    }
+    if (trajectory_end_time < lifecycle_node_->now()) {
+      RCLCPP_ERROR(
+        lifecycle_node_->get_logger(),
+        "Received trajectory with non zero time start time (%f) that ends on the past (%f)",
+        trajectory_start_time.seconds(), trajectory_end_time.seconds());
+      return false;
+    }
   }
 
   for (auto i = 0ul; i < trajectory.joint_names.size(); ++i) {
