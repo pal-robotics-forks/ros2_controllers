@@ -111,8 +111,9 @@ private:
   std::vector<std::string> joint_names_;
   std::vector<std::string> write_op_names_;
 
-  std::vector<hardware_interface::JointCommandHandle *> registered_joint_cmd_handles_;
-  std::vector<const hardware_interface::JointStateHandle *> registered_joint_state_handles_;
+  std::vector<hardware_interface::JointHandle> joint_position_command_handles_;
+  std::vector<hardware_interface::JointHandle> joint_position_state_handles_;
+  std::vector<hardware_interface::JointHandle> joint_velocity_state_handles_;
   std::vector<hardware_interface::OperationModeHandle *> registered_operation_mode_handles_;
 
   // TODO(karsten1987): eventually activate and deactive subscriber directly when its supported
