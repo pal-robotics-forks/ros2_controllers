@@ -32,7 +32,7 @@
 #include "diff_drive_controller/visibility_control.h"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
-#include "hardware_interface/joint_command_handle.hpp"
+#include "hardware_interface/joint_handle.hpp"
 #include "hardware_interface/operation_mode_handle.hpp"
 #include "hardware_interface/robot_hardware.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -96,8 +96,8 @@ public:
 protected:
   struct WheelHandle
   {
-    const hardware_interface::JointStateHandle * state = nullptr;
-    hardware_interface::JointCommandHandle * command = nullptr;
+    std::shared_ptr<const hardware_interface::JointHandle> state = nullptr;
+    std::shared_ptr<hardware_interface::JointHandle> command = nullptr;
   };
 
   CallbackReturn configure_side(
