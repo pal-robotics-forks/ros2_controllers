@@ -4,4 +4,9 @@
       The joint position controller commands a group of joints through the position interface
     </description>
   </class>
+  <class name="position_controllers/SingleJointPositionController" type="position_controllers::SingleJointPositionController" base_class_type="controller_interface::ControllerInterface">
+    <description>
+      The single joint position controller commands a joint through the position interface
+    </description>
+  </class>
 </library>
