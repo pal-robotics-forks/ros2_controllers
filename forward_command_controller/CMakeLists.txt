@@ -23,6 +23,7 @@ find_package(std_msgs REQUIRED)
 add_library(forward_command_controller
   SHARED
   src/forward_command_controller.cpp
+  src/single_forward_command_controller.cpp
 )
 target_include_directories(forward_command_controller PRIVATE include)
 ament_target_dependencies(forward_command_controller
@@ -73,6 +74,16 @@ if(BUILD_TESTING)
   )
 
   ament_add_gtest(
+    test_load_single_forward_command_controller
+    test/test_load_single_forward_command_controller.cpp
+  )
+  target_include_directories(test_load_single_forward_command_controller PRIVATE include)
+  ament_target_dependencies(test_load_single_forward_command_controller
+    controller_manager
+    test_robot_hardware
+  )
+
+  ament_add_gtest(
     test_forward_command_controller
     test/test_forward_command_controller.cpp
   )
@@ -81,6 +92,18 @@ if(BUILD_TESTING)
     forward_command_controller
   )
   ament_target_dependencies(test_forward_command_controller
+    test_robot_hardware
+  )
+
+  ament_add_gtest(
+    test_single_forward_command_controller
+    test/test_single_forward_command_controller.cpp
+  )
+  target_include_directories(test_single_forward_command_controller PRIVATE include)
+  target_link_libraries(test_single_forward_command_controller
+    forward_command_controller
+  )
+  ament_target_dependencies(test_single_forward_command_controller
     test_robot_hardware
   )
 endif()
