@@ -4,4 +4,9 @@
       The joint velocity controller commands a group of joints through the velocity interface
     </description>
   </class>
+  <class name="velocity_controllers/SingleJointVelocityController" type="velocity_controllers::SingleJointVelocityController" base_class_type="controller_interface::ControllerInterface">
+    <description>
+      The single joint velocity controller commands a joint through the velocity interface
+    </description>
+  </class>
 </library>
