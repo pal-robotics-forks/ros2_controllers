@@ -13,7 +13,10 @@
   <depend>forward_command_controller</depend>
   <depend>rclcpp</depend>
 
+  <build_depend>control_toolbox</build_depend>
   <build_depend>pluginlib</build_depend>
+
+  <exec_depend>control_toolbox</exec_depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>

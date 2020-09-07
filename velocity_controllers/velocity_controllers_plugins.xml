@@ -9,4 +9,9 @@
       The single joint velocity controller commands a joint through the velocity interface
     </description>
   </class>
+  <class name="velocity_controllers/SingleJointPositionController" type="velocity_controllers::SingleJointPositionController" base_class_type="controller_interface::ControllerInterface">
+    <description>
+      The single joint position controller commands a joint through the velocity interface
+    </description>
+  </class>
 </library>

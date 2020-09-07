@@ -12,6 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(control_toolbox REQUIRED)
 find_package(forward_command_controller REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -19,10 +20,12 @@ find_package(rclcpp REQUIRED)
 add_library(velocity_controllers
   SHARED
   src/joint_velocity_controller.cpp
+  src/single_joint_position_controller.cpp
   src/single_joint_velocity_controller.cpp
 )
 target_include_directories(velocity_controllers PRIVATE include)
 ament_target_dependencies(velocity_controllers
+  control_toolbox
   forward_command_controller
   pluginlib
   rclcpp
@@ -75,6 +78,16 @@ if(BUILD_TESTING)
   )
 
   ament_add_gtest(
+    test_load_single_joint_position_controller
+    test/test_load_single_joint_position_controller.cpp
+  )
+  target_include_directories(test_load_single_joint_position_controller PRIVATE include)
+  ament_target_dependencies(test_load_single_joint_position_controller
+    controller_manager
+    test_robot_hardware
+  )
+
+  ament_add_gtest(
     test_joint_velocity_controller
     test/test_joint_velocity_controller.cpp
   )
@@ -95,6 +108,18 @@ if(BUILD_TESTING)
     velocity_controllers
   )
   ament_target_dependencies(test_single_joint_velocity_controller
+    test_robot_hardware
+  )
+
+  ament_add_gtest(
+    test_single_joint_position_controller
+    test/test_single_joint_position_controller.cpp
+  )
+  target_include_directories(test_single_joint_position_controller PRIVATE include)
+  target_link_libraries(test_single_joint_position_controller
+    velocity_controllers
+  )
+  ament_target_dependencies(test_single_joint_position_controller
     test_robot_hardware
   )
 endif()
