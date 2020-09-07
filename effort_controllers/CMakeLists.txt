@@ -19,6 +19,7 @@ find_package(rclcpp REQUIRED)
 add_library(effort_controllers
   SHARED
   src/joint_effort_controller.cpp
+  src/single_joint_effort_controller.cpp
 )
 target_include_directories(effort_controllers PRIVATE include)
 ament_target_dependencies(effort_controllers
@@ -64,6 +65,16 @@ if(BUILD_TESTING)
   )
 
   ament_add_gtest(
+    test_load_single_joint_effort_controller
+    test/test_load_single_joint_effort_controller.cpp
+  )
+  target_include_directories(test_load_single_joint_effort_controller PRIVATE include)
+  ament_target_dependencies(test_load_single_joint_effort_controller
+    controller_manager
+    test_robot_hardware
+  )
+
+  ament_add_gtest(
     test_joint_effort_controller
     test/test_joint_effort_controller.cpp
   )
@@ -72,6 +83,18 @@ if(BUILD_TESTING)
     effort_controllers
   )
   ament_target_dependencies(test_joint_effort_controller
+    test_robot_hardware
+  )
+
+  ament_add_gtest(
+    test_single_joint_effort_controller
+    test/test_single_joint_effort_controller.cpp
+  )
+  target_include_directories(test_single_joint_effort_controller PRIVATE include)
+  target_link_libraries(test_single_joint_effort_controller
+    effort_controllers
+  )
+  ament_target_dependencies(test_single_joint_effort_controller
     test_robot_hardware
   )
 endif()
