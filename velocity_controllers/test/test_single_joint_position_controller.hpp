@@ -28,7 +28,8 @@
 class FriendSingleJointPositionController : public velocity_controllers::
   SingleJointPositionController
 {
-  FRIEND_TEST(SingleJointPositionControllerTest, PidParamsTest);
+  FRIEND_TEST(SingleJointPositionControllerTest, ConfigureTest);
+  FRIEND_TEST(SingleJointPositionControllerTest, CommandTest);
 };
 
 class SingleJointPositionControllerTest : public ::testing::Test
@@ -48,6 +49,7 @@ protected:
   std::unique_ptr<FriendSingleJointPositionController> controller_;
 
   std::shared_ptr<hardware_interface::JointHandle> joint1_vel_cmd_handle_;
+  std::shared_ptr<hardware_interface::JointHandle> joint1_pos_state_handle_;
 };
 
 #endif  // TEST_SINGLE_JOINT_POSITION_CONTROLLER_HPP_

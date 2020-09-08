@@ -17,6 +17,7 @@
 
 #include <memory>
 
+#include "rclcpp/duration.hpp"
 #include "velocity_controllers/single_joint_velocity_controller.hpp"
 #include "velocity_controllers/visibility_control.h"
 
@@ -36,6 +37,7 @@ namespace velocity_controllers
  *
  * \param joint Name of the joint to control.
  * \param pid Contains the gains for the PID loop around position.
+ * \param period the controller period
  *
  * Subscribes to:
  * - \b command (std_msgs::msg::Float64) : The position command to apply.
@@ -50,8 +52,17 @@ public:
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
   on_configure(const rclcpp_lifecycle::State & previous_state) override;
 
+  VELOCITY_CONTROLLERS_PUBLIC
+  controller_interface::return_type
+  update() override;
+
 protected:
   std::shared_ptr<control_toolbox::PidROS> pid_;
+
+  std::shared_ptr<hardware_interface::JointHandle> joint_state_handle_;
+
+  double period_;
+  rclcpp::Duration pid_duration_;
 };
 
 }  // namespace velocity_controllers
