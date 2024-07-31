@@ -15,6 +15,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   rcutils
   realtime_tools
   sensor_msgs
+  urdf
 )
 
 find_package(ament_cmake REQUIRED)
