@@ -370,10 +370,10 @@ controller_interface::CallbackReturn AdmittanceController::on_activate(
   read_state_from_hardware(joint_state_, ft_values_);
   for (auto val : joint_state_.positions)
   {
-    if (std::isnan(val))
+    if (!std::isfinite(val))
     {
       RCLCPP_ERROR(get_node()->get_logger(), "Failed to read joint positions from the hardware.\n");
-      return controller_interface::CallbackReturn::ERROR;
+      return controller_interface::CallbackReturn::FAILURE;
     }
   }
   reset_controller_reference_msg(joint_command_msg_);

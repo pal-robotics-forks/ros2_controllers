@@ -498,7 +498,7 @@ controller_interface::CallbackReturn DiffDriveController::on_activate(
     RCLCPP_ERROR(
       get_node()->get_logger(),
       "Either left wheel interfaces, right wheel interfaces are non existent");
-    return controller_interface::CallbackReturn::ERROR;
+    return controller_interface::CallbackReturn::FAILURE;
   }
 
   subscriber_is_active_ = true;

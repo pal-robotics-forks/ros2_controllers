@@ -142,7 +142,7 @@ CallbackReturn GpioCommandController::on_activate(const rclcpp_lifecycle::State 
       command_interface_types_, command_interfaces_map_) ||
     !check_if_configured_interfaces_matches_received(state_interface_types_, state_interfaces_map_))
   {
-    return CallbackReturn::ERROR;
+    return CallbackReturn::FAILURE;
   }
 
   initialize_gpio_state_msg();

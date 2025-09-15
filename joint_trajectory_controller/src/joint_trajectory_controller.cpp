@@ -1100,7 +1100,7 @@ controller_interface::CallbackReturn JointTrajectoryController::on_activate(
       RCLCPP_ERROR(
         logger, "Did not find speed scaling interface '%s' in state interfaces.",
         params_.speed_scaling.state_interface.c_str());
-      return CallbackReturn::ERROR;
+      return CallbackReturn::FAILURE;
     }
   }
   if (!params_.speed_scaling.command_interface.empty())
@@ -1117,7 +1117,7 @@ controller_interface::CallbackReturn JointTrajectoryController::on_activate(
       RCLCPP_ERROR(
         logger, "Did not find speed scaling interface '%s' in command interfaces.",
         params_.speed_scaling.command_interface.c_str());
-      return CallbackReturn::ERROR;
+      return CallbackReturn::FAILURE;
     }
   }
 
@@ -1133,7 +1133,7 @@ controller_interface::CallbackReturn JointTrajectoryController::on_activate(
       RCLCPP_ERROR(
         logger, "Expected %zu '%s' command interfaces, got %zu.", num_cmd_joints_,
         interface.c_str(), joint_command_interface_[index].size());
-      return CallbackReturn::ERROR;
+      return CallbackReturn::FAILURE;
     }
   }
   for (const auto & interface : params_.state_interfaces)
@@ -1147,7 +1147,7 @@ controller_interface::CallbackReturn JointTrajectoryController::on_activate(
       RCLCPP_ERROR(
         logger, "Expected %zu '%s' state interfaces, got %zu.", dof_, interface.c_str(),
         joint_state_interface_[index].size());
-      return CallbackReturn::ERROR;
+      return CallbackReturn::FAILURE;
     }
   }
 
