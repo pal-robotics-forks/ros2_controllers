@@ -41,6 +41,8 @@ setup(
         "console_scripts": [
             "rqt_joint_trajectory_controller = \
                 rqt_joint_trajectory_controller.rqt_joint_trajectory_controller:main",
+            "tui_joint_trajectory_controller = \
+                rqt_joint_trajectory_controller.tui_joint_trajectory_controller:main",
         ],
     },
 )
