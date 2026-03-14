@@ -30,6 +30,7 @@ joint_state_broadcaster
 * Make all parameters read-only (the never got re-evaluated after initialization anyways). (`#2064 <https://github.com/ros-controls/ros2_controllers/pull/2064>`_)
 * Added parameter ``publish_dynamic_joint_states`` to enable/disable publishing of dynamic joint states. (`#2064 <https://github.com/ros-controls/ros2_controllers/pull/2064>`_)
 * Removed interfaces with other data types than double for publishing to ``dynamic_joint_states``. (`#2115 <https://github.com/ros-controls/ros2_controllers/pull/2115>`_)
+* The joint_state_broadcaster now only publishes the ``joint_states`` topic for the joint present in the URDF and other joints defined under ``extra_joints`` parameter . The ``dynamic_joint_states`` topic is removed. (`#2187 <https://github.com/ros-controls/ros2_controllers/pull/2187>`_)
 
 omni_wheel_drive_controller
 *****************************
